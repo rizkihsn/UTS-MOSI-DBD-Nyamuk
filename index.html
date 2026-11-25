@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mosquito | Simulasi Sistem Dinamik DBD</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --crimson: #890f20;
+      --crimson-deep: #4f0610;
+      --crimson-bright: #b1192e;
+      --bone: #f5d5cc;
+      --bone-soft: #f8e6e0;
+      --ink: #fff5f2;
+      --muted: rgba(255, 232, 226, .78);
+      --card: rgba(38, 4, 10, .58);
+      --line-model: #ff5c72;
+      --border: rgba(245, 213, 204, .16);
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--crimson-deep);
+      overflow-x: hidden
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(115% 80% at 52% 18%, var(--crimson-bright) 0%, var(--crimson) 48%, var(--crimson-deep) 100%);
+      background-attachment: fixed;
+      color: var(--ink);
+      font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      width: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top fixed navigation with subtle readability scrim */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 5vw 24px;
+      z-index: 20;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(to bottom, rgba(58, 5, 12, .72) 0%, rgba(58, 5, 12, .25) 65%, transparent 100%);
+      pointer-events: none;
+    }
+
+    nav .nav-left,
+    nav .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      pointer-events: auto
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(245, 213, 204, .15);
+      border: 1px solid rgba(245, 213, 204, .35);
+      display: grid;
+      place-items: center;
+      backdrop-filter: blur(8px);
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s
+    }
+
+    nav a:hover,
+    nav a:focus-visible {
+      color: var(--ink)
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink) !important;
+      font-size: 12px;
+      letter-spacing: .02em;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(38, 4, 10, .44);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-cta:hover {
+      background: rgba(245, 213, 204, .16);
+      border-color: rgba(245, 213, 204, .4)
+    }
+
+    /* Full-viewport 3D Mosquito Canvas */
+    #mosquito-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    /* Macro Botanical Parallax Layers */
+    .botanical {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      will-change: transform;
+      filter: drop-shadow(0 28px 40px rgba(28, 2, 6, .48));
+    }
+
+    .botanical-hero {
+      left: -6vw;
+      bottom: -7vh;
+      width: min(45vw, 580px);
+      z-index: 3;
+      transform-origin: bottom left;
+    }
+
+    .botanical-fg {
+      position: fixed;
+      left: -8vw;
+      bottom: -18vh;
+      width: min(44vw, 560px);
+      z-index: 5;
+      opacity: 0;
+      filter: blur(7px) brightness(.72) drop-shadow(0 20px 30px rgba(20, 2, 5, .55));
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    .botanical-leaf {
+      right: -7vw;
+      top: 14vh;
+      width: min(54vw, 760px);
+      z-index: 3;
+    }
+
+    .botanical-bromeliad {
+      left: -3vw;
+      bottom: -1vh;
+      width: min(42vw, 540px);
+      z-index: 3;
+    }
+
+    /* Sections & Editorial Grid */
+    section {
+      min-height: 100vh;
+      padding: 86px 5vw 56px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    #top {
+      justify-content: space-between;
+      padding-top: 84px;
+      padding-bottom: 58px;
+    }
+
+    .hero-title {
+      font-size: clamp(84px, 19.8vw, 300px);
+      line-height: .84;
+      margin: 1.5vh 0 0;
+      color: var(--bone);
+      font-weight: 800;
+      letter-spacing: -.045em;
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 24px 60px rgba(45, 4, 10, .28);
+    }
+
+    .hero-bottom {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      position: relative;
+      z-index: 6;
+      margin-top: auto;
+    }
+
+    .hero-copy {
+      width: min(100%, 355px);
+    }
+
+    .hero-copy p {
+      font-size: 13.5px;
+      line-height: 1.62;
+      color: var(--bone-soft);
+      margin: 0 0 16px;
+      max-width: 35ch;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--bone);
+      margin-bottom: 8px;
+      opacity: .9;
+    }
+
+    .eyebrow::before {
+      content: '';
+      width: 18px;
+      height: 1.5px;
+      background: var(--bone);
+      display: inline-block;
+    }
+
+    /* Alternating Section Layout */
+    .sec-grid {
+      display: grid;
+      grid-template-columns: 1fr minmax(330px, 46%);
+      gap: 4vw;
+      align-items: center;
+      width: 100%;
+    }
+
+    .sec-grid.flip {
+      grid-template-columns: minmax(330px, 48%) 1fr;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 48vh;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .num {
+      font-size: clamp(108px, 17.5vw, 250px);
+      font-weight: 800;
+      color: var(--bone);
+      line-height: .78;
+      letter-spacing: -.05em;
+      position: relative;
+      z-index: 2;
+      user-select: none;
+      text-shadow: 0 20px 50px rgba(40, 3, 8, .25);
+    }
+
+    .col {
+      position: relative;
+      z-index: 6;
+      width: 100%;
+    }
+
+    .col-top-num {
+      font-size: clamp(74px, 8.5vw, 122px);
+      line-height: .84;
+      margin-bottom: -.6vw;
+      display: block;
+    }
+
+    .col-top-num.right {
+      text-align: right
+    }
+
+    h2 {
+      font-size: clamp(24px, 2.5vw, 35px);
+      line-height: 1.10;
+      margin: 0 0 10px;
+      font-weight: 800;
+      letter-spacing: -.025em;
+      color: var(--ink);
+      max-width: 21ch;
+    }
+
+    p {
+      font-size: 13px;
+      line-height: 1.58;
+      color: var(--muted);
+      max-width: 50ch;
+      margin: 0 0 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1.5px solid rgba(245, 213, 204, .65);
+      padding: 9px 19px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      background: rgba(45, 4, 10, .32);
+      backdrop-filter: blur(8px);
+      transition: background .25s, border-color .25s, transform .2s;
+    }
+
+    .btn:hover,
+    .btn:focus-visible {
+      background: var(--bone);
+      color: var(--crimson-deep);
+      border-color: var(--bone);
+      transform: translateY(-1px);
+    }
+
+    /* Charts & Sliders */
+    .chart {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 11px 12px 8px;
+      margin: 10px 0;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 24px 48px rgba(24, 2, 6, .32);
+      position: relative;
+    }
+
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      align-items: center
+    }
+
+    .lg-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .lg-line {
+      width: 16px;
+      height: 2.5px;
+      border-radius: 2px;
+      display: inline-block
+    }
+
+    .lg-dash {
+      width: 16px;
+      height: 0;
+      border-top: 2.5px dashed var(--line-model);
+      display: inline-block
+    }
+
+    .chart svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible
+    }
+
+    .sl-group {
+      background: rgba(38, 4, 10, .38);
+      border: 1px solid rgba(245, 213, 204, .11);
+      border-radius: 13px;
+      padding: 9px 13px;
+      margin: 10px 0;
+      backdrop-filter: blur(10px);
+    }
+
+    .sl {
+      display: grid;
+      grid-template-columns: 1fr 54px;
+      gap: 2px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--bone-soft);
+      margin: 5px 0;
+    }
+
+    .sl:first-child {
+      margin-top: 1px
+    }
+
+    .sl:last-child {
+      margin-bottom: 1px
+    }
+
+    .sl output {
+      text-align: right;
+      color: var(--bone);
+      font-variant-numeric: tabular-nums
+    }
+
+    .sl input {
+      grid-column: 1/-1;
+      width: 100%;
+      accent-color: var(--bone);
+      cursor: pointer;
+      height: 4px;
+    }
+
+    .met {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .met b {
+      display: block;
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--bone);
+      letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums;
+      margin-top: 1px;
+    }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 6;
+      padding: 64px 5vw 54px;
+      border-top: 1px solid rgba(245, 213, 204, .14);
+      background: linear-gradient(to bottom, rgba(45, 4, 10, .25), rgba(32, 3, 7, .85));
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 28px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    footer strong {
+      font-size: clamp(26px, 3.2vw, 38px);
+      display: block;
+      font-weight: 800;
+      color: var(--bone);
+      letter-spacing: -.03em;
+      margin-bottom: 4px;
+    }
+
+    footer a {
+      color: var(--bone);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(245, 213, 204, .35)
+    }
+
+    footer a:hover {
+      border-color: var(--bone)
+    }
+
+    .foot-meta {
+      text-align: right;
+      line-height: 1.7
+    }
+
+    .scroll-cue {
+      position: absolute;
+      left: 5vw;
+      bottom: 28px;
+      z-index: 6;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(245, 213, 204, .72);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scroll-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--bone);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: .35;
+        transform: scale(.85)
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.25)
+      }
+    }
+
+    @media(max-width:860px) {
+      nav {
+        padding: 14px 4vw 20px
+      }
+
+      nav .nav-left {
+        gap: 14px
+      }
+
+      .brand {
+        white-space: nowrap;
+        font-size: 12px
+      }
+
+      nav .nav-right {
+        display: none
+      }
+
+      section {
+        padding: 82px 5vw 52px;
+        overflow-x: hidden
+      }
+
+      #top {
+        padding-top: 76px;
+        padding-bottom: 76px
+      }
+
+      .sec-grid,
+      .sec-grid.flip {
+        grid-template-columns: 1fr;
+        gap: 20px
+      }
+
+      .stage {
+        min-height: 18vh
+      }
+
+      .sec-grid.flip .stage {
+        order: -1
+      }
+
+      .botanical-hero {
+        width: 68vw;
+        left: -10vw;
+        bottom: -2vh;
+        opacity: .85
+      }
+
+      .botanical-leaf {
+        width: 75vw;
+        right: -14vw;
+        top: 6vh;
+        opacity: .65
+      }
+
+      .botanical-bromeliad {
+        width: 70vw;
+        left: -10vw;
+        bottom: 0;
+        opacity: .65
+      }
+
+      .botanical-fg {
+        display: none
+      }
+
+      .col-top-num.right {
+        text-align: left
+      }
+
+      .foot-meta {
+        text-align: left
+      }
+
+      .scroll-cue {
+        display: none
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      html {
+        scroll-behavior: auto
+      }
+
+      .scroll-dot {
+        animation: none
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav aria-label="Navigasi utama">
+    <div class="nav-left">
+      <a href="#top" class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5d5cc" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M12 6v12M12 7L5 3M12 7l7-4M12 11c-4-2-7 0-8 3M12 11c4-2 7 0 8 3M12 14l-5 6M12 14l5 6" />
+          </svg>
+        </span>
+        <span>DBD · SIR-SI</span>
+      </a>
+      <a href="#data">Data</a>
+      <a href="#model">Model</a>
+      <a href="#skenario">Skenario</a>
+    </div>
+    <div class="nav-right">
+      <a href="#skenario" class="nav-cta">Simulasi Intervensi ↗</a>
+    </div>
+  </nav>
+
+  <canvas id="mosquito-canvas" aria-label="Visualisasi 3D interaktif nyamuk Aedes aegypti"></canvas>
+  <img id="fg-leaf" class="botanical-fg" src="assets/dewy-leaf.png" alt="" aria-hidden="true">
+
+  <section id="top">
+    <img id="hero-petal" class="botanical botanical-hero" src="assets/hero-petal.png" alt="" aria-hidden="true">
+    <h1 class="hero-title">Mosquito</h1>
+    <div class="hero-bottom">
+      <div class="hero-copy">
+        <span class="eyebrow">Aedes aegypti · Sistem Dinamik</span>
+        <p>Simulasi sistem dinamik penularan demam berdarah dengue (DBD) antara manusia dan nyamuk <em>Aedes</em>,
+          dikalibrasi dengan data kasus bulanan Filipina 2016 sampai 2020.</p>
+        <a class="btn" href="#data">Lihat datanya ↘</a>
+      </div>
+    </div>
+    <div class="scroll-cue" aria-hidden="true"><span class="scroll-dot"></span>Gulir untuk menjelajah</div>
+  </section>
+
+  <section id="data">
+    <div class="sec-grid">
+      <div class="stage">
+        <div class="num" aria-hidden="true">01</div>
+      </div>
+      <div class="col">
+        <span class="eyebrow">Pola Musiman</span>
+        <h2>Kasus DBD memuncak setiap musim hujan</h2>
+        <p>Total kasus nasional per bulan. Puncak muncul sekitar Juli sampai September, dan 2019 menjadi tahun wabah
+          terbesar. Penurunan 2020 bertepatan dengan pandemi COVID-19.</p>
+        <div class="chart">
+          <div class="chart-head">
+            <span>Kasus Bulanan Nasional (2016–2020)</span>
+            <span class="legend"><span class="lg-item"><span class="lg-line"
+                  style="background:var(--bone)"></span>Observasi</span></span>
+          </div>
+          <svg id="c1" viewBox="0 0 600 225" role="img" aria-label="Grafik kasus DBD bulanan Filipina 2016-2020"></svg>
+        </div>
+        <p style="font-size:12px;margin-bottom:0">Sumber: Kaggle, Dengue Cases in the Philippines (vincentgupo).</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="model">
+    <img id="dewy-leaf" class="botanical botanical-leaf" src="assets/dewy-leaf.png" alt="" aria-hidden="true">
+    <div class="sec-grid flip">
+      <div class="col">
+        <div class="num col-top-num" aria-hidden="true">02</div>
+        <span class="eyebrow">Kalibrasi SIR-SI</span>
+        <h2>Model manusia dan nyamuk dicocokkan dengan data</h2>
+        <p>Manusia: rentan, terinfeksi, pulih. Nyamuk: rentan dan terinfeksi. Parameter dikalibrasi pada 2016 sampai
+          2018, lalu diuji pada 2019.</p>
+        <div class="chart">
+          <div class="chart-head">
+            <span>Validasi Kurva Model</span>
+            <span class="legend">
+              <span class="lg-item"><span class="lg-line" style="background:var(--bone)"></span>Data</span>
+              <span class="lg-item"><span class="lg-dash"></span>Model</span>
+            </span>
+          </div>
+          <svg id="c2" viewBox="0 0 600 215" role="img"
+            aria-label="Grafik perbandingan data observasi dan model SIR-SI"></svg>
+        </div>
+        <div class="sl-group">
+          <div class="sl"><label for="kb">Penularan nyamuk ke manusia</label><output id="ob"></output><input id="kb"
+              type="range" min=".5" max="1.5" step=".01" value="1"></div>
+          <div class="sl"><label for="kc">Penularan manusia ke nyamuk</label><output id="oc"></output><input id="kc"
+              type="range" min=".5" max="1.5" step=".01" value="1"></div>
+          <div class="sl"><label for="ka">Pengaruh musim hujan</label><output id="oa"></output><input id="ka"
+              type="range" min="0" max=".9" step=".01"></div>
+        </div>
+        <div class="met">
+          <span>Galat 2016-2018 (MAPE)<b id="m1"></b></span>
+          <span>Galat 2019 (MAPE)<b id="m2"></b></span>
+        </div>
+      </div>
+      <div class="stage" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section id="skenario">
+    <img id="bromeliad-img" class="botanical botanical-bromeliad" src="assets/bromeliad.png" alt="" aria-hidden="true">
+    <div class="sec-grid">
+      <div class="stage" aria-hidden="true"></div>
+      <div class="col">
+        <div class="num col-top-num right" aria-hidden="true">03</div>
+        <span class="eyebrow">Simulasi Pengendalian Vektor</span>
+        <h2>Berapa kasus yang bisa dicegah?</h2>
+        <p>Atur seberapa besar populasi nyamuk ditekan (pengasapan, pemberantasan sarang nyamuk) dan kapan dimulai.
+          Garis putus-putus adalah kondisi tanpa intervensi.</p>
+        <div class="chart">
+          <div class="chart-head">
+            <span>Dampak Intervensi Populasi Nyamuk</span>
+            <span class="legend">
+              <span class="lg-item"><span class="lg-dash"></span>Tanpa intervensi</span>
+              <span class="lg-item"><span class="lg-line" style="background:var(--bone)"></span>Dengan intervensi</span>
+            </span>
+          </div>
+          <svg id="c3" viewBox="0 0 600 215" role="img"
+            aria-label="Grafik skenario intervensi pengurangan populasi nyamuk"></svg>
+        </div>
+        <div class="sl-group">
+          <div class="sl"><label for="kr">Pengurangan nyamuk</label><output id="or"></output><input id="kr" type="range"
+              min="0" max="60" step="5" value="20"></div>
+          <div class="sl"><label for="ks">Mulai pada bulan ke</label><output id="os"></output><input id="ks"
+              type="range" min="1" max="48" step="1" value="37"></div>
+        </div>
+        <div class="met">
+          <span>Kasus tanpa intervensi<b id="s0"></b></span>
+          <span>Kasus dengan intervensi<b id="s1"></b></span>
+          <span>Tercegah<b id="s2"></b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>
+      <strong>Rizki Hasan Fauzi</strong>
+      NIM 301240071 · Teknik Informatika 5B · UNIBBA
+    </div>
+    <div class="foot-meta">
+      UTS Pemodelan dan Simulasi<br>
+      Semester 5, 2025/2026<br>
+      <a href="https://github.com/rizkihsn">github.com/rizkihsn</a>
+    </div>
+  </footer>
+
+  <script src="assets/mosquito3d.js"></script>
+  <script>
+    const OBS = [17052, 12386, 9300, 7269, 8092, 10831, 29744, 36195, 26990, 21943, 16252, 13490, 15623, 9872, 7696, 6343, 4853, 7589, 18340, 25039, 17753, 15259, 12553, 13235, 12657, 10466, 7944, 6860, 6594, 11502, 30363, 34210, 38617, 30026, 30191, 31353, 20672, 25494, 19798, 9252, 10387, 25523, 55220, 85038, 89642, 46382, 30097, 24397, 18324, 19583, 12838, 2784, 2461, 2665, 4575, 7072, 4941, 4035, 5807, 5956],
+      P = { "b": 0.05000002911820113, "c": 0.20653355357421374, "a": 0.21515434955760823, "t0": 190.96856309151212, "rho": 0.9452397480742808, "N": 108000000 },
+      G = 1 / 7, MU = 1 / 14, OM = 1 / 365, DAYS = 1826;
+    const mi = []; for (let d = 0; d < DAYS; d++) { const t = new Date(Date.UTC(2016, 0, 1 + d)); mi.push((t.getUTCFullYear() - 2016) * 12 + t.getUTCMonth()) }
+
+    function sim(b, c, a, red, start) {
+      let S = 1 - 2e-5, I = 2e-5, R = 0, V = 1e-4;
+      const o = new Array(60).fill(0);
+      for (let d = 0; d < DAYS; d++) {
+        const r = (d >= start) ? red : 0;
+        const m = (1 + a * Math.cos(2 * Math.PI * (d - P.t0) / 365)) * (1 - r);
+        const n = b * m * V * S;
+        const dS = -n + OM * R, dI = n - G * I, dR = G * I - OM * R, dV = c * I * (1 - V) - MU * V;
+        S += dS; I += dI; R += dR; V += dV; o[mi[d]] += n * P.N * P.rho;
+      }
+      return o;
+    }
+
+    function err(s, x, y) {
+      let q = 0, p = 0, n = y - x + 1;
+      for (let i = x; i <= y; i++) { q += (s[i] - OBS[i]) ** 2; p += Math.abs(s[i] - OBS[i]) / OBS[i] }
+      return [Math.sqrt(q / n), p / n * 100];
+    }
+
+    function draw(id, series) {
+      const el = document.getElementById(id), vb = el.viewBox.baseVal, W = vb.width || 600, H = vb.height || 220, L = 44, B = 22, mx = Math.max(...series.flatMap(s => s.v)) * 1.08;
+      let h = `<defs><linearGradient id="grad-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5d5cc" stop-opacity="0.28"/><stop offset="100%" stop-color="#f5d5cc" stop-opacity="0.0"/></linearGradient></defs>`;
+      for (let k = 0; k <= 4; k++) {
+        const y = H - B - (H - B - 10) * k / 4;
+        h += `<line x1="${L}" x2="${W - 6}" y1="${y}" y2="${y}" stroke="rgba(245,213,204,.13)"/><text x="${L - 6}" y="${y + 4}" fill="#f5d5cc" opacity=".78" font-size="10" text-anchor="end">${Math.round(mx * k / 4 / 1000)}k</text>`;
+      }
+      for (let y = 0; y < 5; y++) {
+        const x = L + (W - L - 6) * (y * 12) / 59;
+        h += `<text x="${x}" y="${H - 5}" fill="#f5d5cc" opacity=".78" font-size="10">${2016 + y}</text>`;
+      }
+      series.forEach(s => {
+        const pts = s.v.map((v, i) => (L + (W - L - 6) * i / 59).toFixed(1) + ',' + (H - B - (H - B - 10) * v / mx).toFixed(1));
+        if (!s.d) {
+          h += `<polygon fill="url(#grad-${id})" points="${L},${H - B} ${pts.join(' ')} ${W - 6},${H - B}"/>`;
+        }
+        h += `<polyline fill="none" stroke="${s.c}" stroke-width="${s.w || 2.6}" stroke-linecap="round" stroke-linejoin="round" ${s.d ? 'stroke-dasharray="6 4"' : ''} points="${pts.join(' ')}"/>`;
+      });
+      el.innerHTML = h;
+    }
+
+    const $ = i => document.getElementById(i), fmt = n => Math.round(n).toLocaleString('id-ID');
+
+    function u2() {
+      const b = P.b * $('kb').value, c = P.c * $('kc').value, a = +$('ka').value;
+      $('ob').textContent = 'x' + $('kb').value; $('oc').textContent = 'x' + $('kc').value; $('oa').textContent = a.toFixed(2);
+      const s = sim(b, c, a, 0, 0);
+      draw('c2', [{ v: OBS, c: '#f5d5cc' }, { v: s, c: '#ff5c72', d: 1, w: 2.2 }]);
+      const e1 = err(s, 0, 35), e2 = err(s, 36, 47);
+      $('m1').textContent = e1[1].toFixed(0) + '%'; $('m2').textContent = e2[1].toFixed(0) + '%';
+    }
+
+    function u3() {
+      const r = $('kr').value / 100, st = ($('ks').value - 1) * 30.4 | 0;
+      $('or').textContent = Math.round(r * 100) + '%'; $('os').textContent = $('ks').value;
+      const b0 = sim(P.b, P.c, P.a, 0, 0), b1 = sim(P.b, P.c, P.a, r, st), t0 = b0.reduce((x, y) => x + y), t1 = b1.reduce((x, y) => x + y);
+      draw('c3', [{ v: b0, c: '#ff5c72', d: 1, w: 2.2 }, { v: b1, c: '#f5d5cc' }]);
+      $('s0').textContent = fmt(t0); $('s1').textContent = fmt(t1); $('s2').textContent = fmt(t0 - t1);
+    }
+
+    draw('c1', [{ v: OBS, c: '#f5d5cc' }]);
+    $('ka').value = P.a.toFixed(2);
+    u2(); u3();
+    ['kb', 'kc', 'ka'].forEach(i => $(i).oninput = u2);
+    ['kr', 'ks'].forEach(i => $(i).oninput = u3);
+
+    if (window.initMosquito3D) {
+      window.initMosquito3D($('mosquito-canvas'));
+    }
+
+    (function () {
+      const heroPetal = $('hero-petal'), fgLeaf = $('fg-leaf'), dewyLeaf = $('dewy-leaf'), brom = $('bromeliad-img');
+      const sec2 = $('model'), sec3 = $('skenario');
+      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function updateParallax() {
+        const sy = window.scrollY, vh = window.innerHeight || 900;
+        const maxS = Math.max(1, document.documentElement.scrollHeight - vh);
+        const p = sy / maxS;
+        if (heroPetal) {
+          heroPetal.style.transform = `translate3d(${-sy * 0.08}px,${-sy * 0.18}px,0) rotate(${-sy * 0.015}deg)`;
+        }
+        if (fgLeaf) {
+          const win = Math.max(0, 1 - Math.abs(p - 0.44) / 0.16);
+          const tx = (p - 0.28) * 180;
+          const ty = (0.48 - p) * 220;
+          fgLeaf.style.opacity = (win * 0.86).toFixed(3);
+          fgLeaf.style.transform = `translate3d(${tx}px,${ty}px,0) rotate(${-18 + (p * 24)}deg) scale(1.12)`;
+        }
+        if (dewyLeaf && sec2) {
+          const rel = (sy - sec2.offsetTop) / vh;
+          dewyLeaf.style.transform = `translate3d(${Math.abs(rel) * 22}px,${-rel * 95}px,0) rotate(${rel * 6}deg)`;
+        }
+        if (brom && sec3) {
+          const rel = (sy - sec3.offsetTop) / vh;
+          brom.style.transform = `translate3d(${-Math.abs(rel) * 18}px,${-rel * 85}px,0) rotate(${-rel * 5}deg)`;
+        }
+      }
+      if (!reduced) {
+        window.addEventListener('scroll', updateParallax, { passive: true });
+        window.addEventListener('resize', updateParallax, { passive: true });
+      }
+      updateParallax();
+    })();
+  </script>
+</body>
+
+</html>

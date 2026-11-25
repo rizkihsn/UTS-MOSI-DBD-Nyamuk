@@ -1,0 +1,33 @@
+# Operating System
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Python / Jupyter / Colab
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Node / Web / Vercel
+node_modules/
+.vercel/
+dist/
+build/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs & Temporary Files
+*.log
+*.tmp
+*.bak
